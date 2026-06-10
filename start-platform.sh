@@ -210,7 +210,7 @@ stop_legacy_compose_stacks() {
     fi
   done
   local c
-  for c in gido-backend gido-frontend dataworks-backend dataworks-frontend; do
+  for c in gido-backend gido-frontend; do
     if docker container inspect "$c" >/dev/null 2>&1; then
       log "移除残留容器: $c"
       docker rm -f "$c" >/dev/null 2>&1 || true
