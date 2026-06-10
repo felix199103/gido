@@ -69,6 +69,7 @@ jobs:
             --exclude-dir=dist \
             --exclude-dir=.venv \
             --exclude-dir=__pycache__ \
+            --exclude-dir=.github \
             --exclude='MIGRATION_FROM_DATAWORKS.md' \
             --exclude='add_spdx_headers.py' \
             || true)"
