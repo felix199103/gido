@@ -98,3 +98,49 @@ jobs:
             echo "::error::Missing SPDX headers; run gido/scripts/add_spdx_headers.py"
             exit 1
           fi
+
+  docker:
+    name: Build and push Docker image to GHCR
+    runs-on: ubuntu-latest
+    # 只在 main/master 分支的 push 事件上构建镜像（可选，避免 PR 也构建）
+    if: github.event_name == 'push' && (github.ref == 'refs/heads/main' || github.ref == 'refs/heads/master')
+    permissions:
+      contents: read
+      packages: write   # 允许向 GHCR 推送
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v3
+
+      - name: Log in to GHCR
+        uses: docker/login-action@v3
+        with:
+          registry: ghcr.io
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Build frontend (for Docker)
+        run: |
+          cd gido/frontend
+          npm ci
+          npm run build
+        # 构建产物会生成在 gido/frontend/dist（假设）
+
+      - name: Extract metadata (tags, labels)
+        id: meta
+        uses: docker/metadata-action@v5
+        with:
+          images: ghcr.io/${{ github.repository }}
+          tags: |
+            type=raw,value=latest,enable={{is_default_branch}}
+            type=sha,prefix={{branch}}-
+            type=ref,event=branch
+
+      - name: Build and push Docker image
+        uses: docker/build-push-action@v5
+        with:
+          context: .               # 项目根目录
+          push: true
+          tags: ${{ steps.meta.outputs.tags }}
+          labels: ${{ steps.meta.outputs.labels }}
